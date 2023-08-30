@@ -1,21 +1,21 @@
 package fakeheaders
 
 import (
+	"errors"
 	"io"
-	"math/rand"
 	"net/http"
 	"os"
 )
 
 func (f *FakeHeaders) RandomUserAgent() (string, error) {
 	if len(f.UserAgents) <= 0 {
-		return "", nil
+		return "", errors.New("No User Agents found")
 	}
-	return f.UserAgents[rand.Intn(len(f.UserAgents))], nil
+	return f.UserAgents[random(len(f.UserAgents))], nil
 }
 
 func (f *FakeHeaders) UpdateAgentsList() {
-
+	downloadUserAgents()
 }
 func downloadUserAgents() {
 	url := "https://raw.githubusercontent.com/EIGHTFINITE/top-user-agents/main/index.json"
