@@ -1,5 +1,6 @@
 [
     "gzip",
+    "gzip, deflate",
     "gzip, br",
     "gzip, deflate, br",
     "gzip, deflate, br, identity;q=0.9",
