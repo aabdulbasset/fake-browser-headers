@@ -69,7 +69,7 @@ func NewFakeHeaders() *FakeHeaders {
 	var acceptLanguageResult []string
 	json.Unmarshal([]byte(acceptLanguageFile), &acceptLanguageResult)
 
-	acceptEncodingFile, err := fs.ReadFile("static/acceptencoding.json")
+	acceptEncodingFile, err := fs.ReadFile("static/acceptencode.json")
 	if err != nil {
 		panic(err)
 	}
