@@ -24,7 +24,9 @@ func TestFakeHeaders_RandomAccept(t *testing.T) {
 func TestFakeHeaders_RandomHeaders(t *testing.T) {
 	f := NewFakeHeaders()
 	fakeHeaders, err := f.RandomHeaders()
-	println(fakeHeaders.Connection)
+	println(fakeHeaders.SecFetchPlatform)
+	println(fakeHeaders.SecUA)
+	println(fakeHeaders.UserAgent)
 	if err != nil {
 		t.Error(err)
 	}

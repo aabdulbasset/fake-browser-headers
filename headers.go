@@ -37,6 +37,7 @@ type FakeHeader struct {
 	SecFetchPlatform        string
 	SecMobile               string
 	SecUA                   string
+	Te                      string
 }
 
 func NewFakeHeaders() *FakeHeaders {
@@ -107,23 +108,31 @@ func (f *FakeHeaders) RandomHeaders() (*FakeHeader, error) {
 		return &FakeHeader{}, err
 	}
 	ua := useragent.Parse(randUserAgent)
-	var derivedUA string
-	if !strings.Contains(randUserAgent, "Chrome") {
-		derivedUA = ""
-		//
-	} else {
-		derivedUA = fmt.Sprintf("\"Chromium\";v=\"%d\", \"Not A Brand\";v=\"99\"", ua.VersionNo.Major)
-		if ua.Name == "Edge" {
-			derivedUA += "\"Microsoft Edge\";v=\"89\""
-		}
 
+	derivedUA := ""
+	SecPlatform := ""
+	SecMobile := ""
+	te := ""
+
+	if strings.Contains(randUserAgent, "Firefox") {
+		te = "trailers"
 	}
-	var SecMobile string
-	if ua.Mobile {
-		SecMobile = "?1"
-	} else {
-		SecMobile = "?0"
+	if strings.Contains(randUserAgent, "Chrome") {
+		derivedUA = fmt.Sprintf("\"Chromium\";v=\"%d\", \"Not A Brand\";v=\"%d\"", ua.VersionNo.Major, random(99))
+		if ua.Name == "Edge" {
+			derivedUA += fmt.Sprintf(", \"Microsoft Edge\";v=\"%d\"", ua.VersionNo.Major)
+		} else {
+			derivedUA += fmt.Sprintf(", \"Google Chrome\";v=\"%d\"", ua.VersionNo.Major)
+		}
+		if ua.Mobile {
+			SecMobile = "?1"
+		} else {
+			SecMobile = "?0"
+		}
+		SecPlatform = fmt.Sprintf("\"%s\"", ua.OS)
+		//
 	}
+
 	return &FakeHeader{
 		UserAgent:               randUserAgent,
 		Accept:                  randAccept,
@@ -134,10 +143,11 @@ func (f *FakeHeaders) RandomHeaders() (*FakeHeader, error) {
 		SecFetchSite:            "none",
 		SecFetchMode:            "navigate",
 		SecFetchDest:            "document",
-		SecFetchPlatform:        ua.OS,     //TODO: Detect platform from userAgent
-		SecMobile:               SecMobile, //TODO: Detect if mobile from userAgent
+		SecFetchPlatform:        SecPlatform, //TODO: Detect platform from userAgent
+		SecMobile:               SecMobile,   //TODO: Detect if mobile from userAgent
 		SecUA:                   derivedUA,
 		AcceptEncoding:          randAcceptEncoding,
+		Te:                      te,
 	}, nil
 }
 
