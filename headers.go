@@ -19,10 +19,10 @@ var (
 )
 
 type FakeHeaders struct {
-	UserAgents      []string
 	Accepts         []string
 	AcceptLanguages []string
 	AcceptEncodings []string
+	Platforms       []string
 }
 type FakeHeader struct {
 	UserAgent               string
@@ -45,17 +45,21 @@ func NewFakeHeaders() *FakeHeaders {
 	//check if useragents.json exists
 	//if not, download it
 	//read useragents.json
-
-	userAgents, err := fs.ReadFile("static/useragents.json")
-
-	if err != nil {
-		downloadUserAgents()
-		panic(err)
+	platforms := []string{
+		"Windows NT 10.0; Win64; x64",
+		"Windows NT 10.0; WOW64",
+		"Windows NT 6.3; Win64; x64",
+		"Windows NT 6.3; WOW64",
+		"Machintosh; Intel Mac OS X 10_15_7",
+		"Machintosh; Intel Mac OS X 10_15_6",
+		"Machintosh; Intel Mac OS X 10_10",
+		"Machintosh; Intel Mac OS X 10_9",
+		"X11; Linux x86_64",
+		"X11; Ubuntu; Linux x86_64",
+		"X11; Fedora; Linux x86_64",
+		"X11; Arch; Linux x86_64",
+		"X11; Gentoo; Linux x86_64",
 	}
-	userAgents, _ = fs.ReadFile("static/useragents.json")
-	//populate UserAgents slice
-	var userAgentsResult []string
-	json.Unmarshal([]byte(userAgents), &userAgentsResult)
 
 	acceptFile, err := fs.ReadFile("static/accept.json")
 	if err != nil {
@@ -79,7 +83,7 @@ func NewFakeHeaders() *FakeHeaders {
 	json.Unmarshal([]byte(acceptEncodingFile), &acceptEncodingResult)
 
 	return &FakeHeaders{
-		UserAgents:      userAgentsResult,
+		Platforms:       platforms,
 		Accepts:         acceptResult,
 		AcceptLanguages: acceptLanguageResult,
 		AcceptEncodings: acceptEncodingResult,
