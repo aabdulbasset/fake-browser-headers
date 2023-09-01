@@ -5,30 +5,24 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
-	"strings"
 )
 
-func randomfloat() float64 {
-	return math.Min(rand.Float64()+0.2, 1)
-}
-
 func (f *FakeHeaders) RandomAcceptLanguage() (string, error) {
-	chosenBefore := make(map[string]bool)
 	if len(f.AcceptLanguages) <= 0 {
 		return "", errors.New("No AcceptLanguages found")
 	}
-	uaString := "en-US"
-	for i := 0; i < rand.Intn(5)+1; i++ {
+	uaString := f.AcceptLanguages[random(len(f.AcceptLanguages))]
+	chosenBefore := make(map[string]bool)
+	chosenBefore[uaString] = true
+	quality := 0.9
+	for i := 0; i < rand.Intn(3)+1; i++ {
 		chosen := f.AcceptLanguages[random(len(f.AcceptLanguages))]
 		if chosenBefore[chosen] {
 			continue
 		}
 		chosenBefore[chosen] = true
-		if strings.Contains(chosen, "-") {
-			uaString += "," + chosen
-		} else {
-			uaString += "," + chosen + fmt.Sprintf(";q=%.1f", randomfloat())
-		}
+		uaString += "," + chosen + fmt.Sprintf(";q=%.1f", quality)
+		quality = math.Max(0.1, quality-0.1)
 	}
 	return uaString, nil
 }
