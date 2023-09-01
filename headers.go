@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	mathrand "math/rand"
 	"strings"
 
 	"github.com/mileusna/useragent"
@@ -104,25 +105,28 @@ func (f *FakeHeaders) RandomHeaders() (*FakeHeader, error) {
 	randAccept, err := f.RandomAccept()
 	randAcceptLanguage, err := f.RandomAcceptLanguage()
 	randAcceptEncoding, err := f.RandomAcceptEncoding()
+	punctuation := []string{".", "/", ")", "(", "_", " ", ":"}
+
 	if err != nil {
 		return &FakeHeader{}, err
 	}
 	ua := useragent.Parse(randUserAgent)
 
-	derivedUA := ""
 	SecPlatform := ""
 	SecMobile := ""
 	te := ""
-
+	derivedUA := []string{}
 	if strings.Contains(randUserAgent, "Firefox") {
 		te = "trailers"
 	}
 	if strings.Contains(randUserAgent, "Chrome") {
-		derivedUA = fmt.Sprintf("\"Chromium\";v=\"%d\", \"Not A Brand\";v=\"%d\"", ua.VersionNo.Major, random(99))
+		derivedUA = []string{
+			fmt.Sprintf("\"Chromium\";v=\"%d\"", ua.VersionNo.Major),
+		}
 		if ua.Name == "Edge" {
-			derivedUA += fmt.Sprintf(", \"Microsoft Edge\";v=\"%d\"", ua.VersionNo.Major)
+			derivedUA = append(derivedUA, fmt.Sprintf("\"Microsoft Edge\";v=\"%d\"", ua.VersionNo.Major))
 		} else {
-			derivedUA += fmt.Sprintf(", \"Google Chrome\";v=\"%d\"", ua.VersionNo.Major)
+			derivedUA = append(derivedUA, fmt.Sprintf("\"Google Chrome\";v=\"%d\"", ua.VersionNo.Major))
 		}
 		if ua.Mobile {
 			SecMobile = "?1"
@@ -131,8 +135,16 @@ func (f *FakeHeaders) RandomHeaders() (*FakeHeader, error) {
 		}
 		SecPlatform = fmt.Sprintf("\"%s\"", ua.OS)
 		//
-	}
 
+		derivedUA = append(derivedUA, fmt.Sprintf("\"Not%sA%sBrand\";v=\"99\"", punctuation[random(len(punctuation))], punctuation[random(len(punctuation))]))
+		mathrand.Shuffle(len(derivedUA), func(i, j int) { derivedUA[i], derivedUA[j] = derivedUA[j], derivedUA[i] })
+	}
+	var finalUA string
+	if len(derivedUA) > 0 {
+		finalUA = strings.Join(derivedUA, ", ")
+	} else {
+		finalUA = ""
+	}
 	return &FakeHeader{
 		UserAgent:               randUserAgent,
 		Accept:                  randAccept,
@@ -145,7 +157,7 @@ func (f *FakeHeaders) RandomHeaders() (*FakeHeader, error) {
 		SecFetchDest:            "document",
 		SecFetchPlatform:        SecPlatform, //TODO: Detect platform from userAgent
 		SecMobile:               SecMobile,   //TODO: Detect if mobile from userAgent
-		SecUA:                   derivedUA,
+		SecUA:                   finalUA,
 		AcceptEncoding:          randAcceptEncoding,
 		Te:                      te,
 	}, nil
