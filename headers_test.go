@@ -28,6 +28,7 @@ func TestFakeHeaders_RandomHeaders(t *testing.T) {
 	println(fakeHeaders.SecUA)
 	println(fakeHeaders.UserAgent)
 	println(fakeHeaders.AcceptLanguage)
+	println(fakeHeaders.AcceptEncoding)
 	if err != nil {
 		t.Error(err)
 	}

@@ -1,9 +1,4 @@
 [
-    "gzip",
-    "gzip, deflate",
-    "gzip, br",
-    "gzip, deflate, br",
-    "gzip, deflate, br, identity;q=0.9",
-    "gzip, deflate, br, identity;q=0.9, *;q=0.8"
 
+    "gzip, deflate, br"
 ]
