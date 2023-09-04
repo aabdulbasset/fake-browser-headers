@@ -23,7 +23,12 @@ type FakeHeaders struct {
 	AcceptLanguages []string
 	AcceptEncodings []string
 	Platforms       []string
+	ChromeVersions  []string
+	FirefoxVersions []string
+	EdgeVersions    []string
+	Browser         string
 }
+
 type FakeHeader struct {
 	UserAgent               string
 	Accept                  string
@@ -39,54 +44,110 @@ type FakeHeader struct {
 	SecMobile               string
 	SecUA                   string
 	Te                      string
+	Browser                 string
+}
+type FakeHeadersOptions struct {
+	Accepts           []string
+	AcceptLanguages   []string
+	AcceptEncodings   []string
+	Platforms         []string
+	ChromeVersions    []string
+	FirefoxVersions   []string
+	EdgeVersions      []string
+	BrowserToGenerate string
 }
 
-func NewFakeHeaders() *FakeHeaders {
-	//check if useragents.json exists
-	//if not, download it
-	//read useragents.json
-	platforms := []string{
-		"Windows NT 10.0; Win64; x64",
-		"Windows NT 10.0; WOW64",
-		"Windows NT 6.3; Win64; x64",
-		"Windows NT 6.3; WOW64",
-		"Machintosh; Intel Mac OS X 10_15_7",
-		"Machintosh; Intel Mac OS X 10_15_6",
-		"Machintosh; Intel Mac OS X 10_10",
-		"Machintosh; Intel Mac OS X 10_9",
-		"X11; Linux x86_64",
-		"X11; Ubuntu; Linux x86_64",
-		"X11; Fedora; Linux x86_64",
-		"X11; Arch; Linux x86_64",
-		"X11; Gentoo; Linux x86_64",
+const (
+	Chrome  = "chrome"
+	Firefox = "firefox"
+	Edge    = "edge"
+)
+
+func NewFakeHeaders(opts *FakeHeadersOptions) *FakeHeaders {
+
+	if len(opts.Accepts) == 0 {
+		acceptFile, err := fs.ReadFile("static/accept.json")
+		if err != nil {
+			panic(err)
+		}
+		json.Unmarshal([]byte(acceptFile), &opts.Accepts)
+	}
+	if len(opts.Platforms) == 0 {
+		opts.Platforms = []string{
+			"Windows NT 10.0; Win64; x64",
+			"Windows NT 10.0; WOW64",
+			"Windows NT 6.3; Win64; x64",
+			"Windows NT 6.3; WOW64",
+			"Machintosh; Intel Mac OS X 10_15_7",
+			"Machintosh; Intel Mac OS X 10_15_6",
+			"Machintosh; Intel Mac OS X 10_10",
+			"Machintosh; Intel Mac OS X 10_9",
+			"X11; Linux x86_64",
+			"X11; Ubuntu; Linux x86_64",
+			"X11; Fedora; Linux x86_64",
+			"X11; Arch; Linux x86_64",
+			"X11; Gentoo; Linux x86_64",
+		}
 	}
 
-	acceptFile, err := fs.ReadFile("static/accept.json")
-	if err != nil {
-		panic(err)
+	if len(opts.EdgeVersions) == 0 {
+		opts.EdgeVersions = []string{
+			"116.0.1938.69",
+			"116.0.1938.62",
+			"115.0.1901.203",
+			"114.0.1823.106",
+		}
 	}
-	var acceptResult []string
-	json.Unmarshal([]byte(acceptFile), &acceptResult)
+	if len(opts.ChromeVersions) == 0 {
+		opts.ChromeVersions = []string{
+			"116",
+			"115",
+			"114",
+			"113",
+		}
+	}
+	if len(opts.FirefoxVersions) == 0 {
+		opts.FirefoxVersions = []string{
+			"117",
+			"116",
+			"115",
+			"114",
+		}
+	}
+	if len(opts.AcceptLanguages) == 0 {
 
-	acceptLanguageFile, err := fs.ReadFile("static/acceptlanguage.json")
-	if err != nil {
-		panic(err)
-	}
-	var acceptLanguageResult []string
-	json.Unmarshal([]byte(acceptLanguageFile), &acceptLanguageResult)
+		acceptLanguageFile, err := fs.ReadFile("static/acceptlanguage.json")
+		if err != nil {
+			panic(err)
+		}
+		json.Unmarshal([]byte(acceptLanguageFile), &opts.AcceptLanguages)
 
-	acceptEncodingFile, err := fs.ReadFile("static/acceptencode.json")
-	if err != nil {
-		panic(err)
 	}
-	var acceptEncodingResult []string
-	json.Unmarshal([]byte(acceptEncodingFile), &acceptEncodingResult)
+
+	if len(opts.AcceptEncodings) == 0 {
+		acceptEncodingFile, err := fs.ReadFile("static/acceptencode.json")
+		if err != nil {
+			panic(err)
+		}
+
+		json.Unmarshal([]byte(acceptEncodingFile), &opts.AcceptEncodings)
+	}
+
+	if opts.BrowserToGenerate == "" {
+		browserslist := []string{Chrome, Firefox, Edge}
+		opts.BrowserToGenerate = browserslist[random(len(browserslist))]
+		// println(opts.BrowserToGenerate)
+	}
 
 	return &FakeHeaders{
-		Platforms:       platforms,
-		Accepts:         acceptResult,
-		AcceptLanguages: acceptLanguageResult,
-		AcceptEncodings: acceptEncodingResult,
+		Platforms:       opts.Platforms,
+		Accepts:         opts.Accepts,
+		AcceptLanguages: opts.AcceptLanguages,
+		AcceptEncodings: opts.AcceptEncodings,
+		FirefoxVersions: opts.FirefoxVersions,
+		ChromeVersions:  opts.ChromeVersions,
+		EdgeVersions:    opts.EdgeVersions,
+		Browser:         opts.BrowserToGenerate,
 	}
 }
 
@@ -120,8 +181,10 @@ func (f *FakeHeaders) RandomHeaders() (*FakeHeader, error) {
 	SecMobile := ""
 	te := ""
 	derivedUA := []string{}
+	var generatedBrowser string
 	if strings.Contains(randUserAgent, "Firefox") {
 		te = "trailers"
+		generatedBrowser = "Firefox"
 	}
 	if strings.Contains(randUserAgent, "Chrome") {
 		derivedUA = []string{
@@ -129,8 +192,10 @@ func (f *FakeHeaders) RandomHeaders() (*FakeHeader, error) {
 		}
 		if ua.Name == "Edge" {
 			derivedUA = append(derivedUA, fmt.Sprintf("\"Microsoft Edge\";v=\"%d\"", ua.VersionNo.Major))
+			generatedBrowser = "Edge"
 		} else {
 			derivedUA = append(derivedUA, fmt.Sprintf("\"Google Chrome\";v=\"%d\"", ua.VersionNo.Major))
+			generatedBrowser = "Chrome"
 		}
 		if ua.Mobile {
 			SecMobile = "?1"
@@ -159,11 +224,12 @@ func (f *FakeHeaders) RandomHeaders() (*FakeHeader, error) {
 		SecFetchSite:            "none",
 		SecFetchMode:            "navigate",
 		SecFetchDest:            "document",
-		SecFetchPlatform:        SecPlatform, //TODO: Detect platform from userAgent
-		SecMobile:               SecMobile,   //TODO: Detect if mobile from userAgent
+		SecFetchPlatform:        SecPlatform,
+		SecMobile:               SecMobile,
 		SecUA:                   finalUA,
 		AcceptEncoding:          randAcceptEncoding,
 		Te:                      te,
+		Browser:                 generatedBrowser,
 	}, nil
 }
 

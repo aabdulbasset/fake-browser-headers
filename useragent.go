@@ -2,6 +2,7 @@ package fakeheaders
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -10,66 +11,56 @@ import (
 )
 
 func (f *FakeHeaders) RandomUserAgent() (string, error) {
-	choosenBrowser := random(2)
+
 	platform := f.Platforms[random(len(f.Platforms))]
-	if choosenBrowser == 0 {
-		return GenerateEdge(platform)
-	} else if choosenBrowser == 1 {
-		return GenerateChrome(platform)
+	if f.Browser == Edge {
+		return f.GenerateEdge(platform)
+	} else if f.Browser == Chrome {
+		return f.GenerateChrome(platform)
+	} else if f.Browser == Firefox {
+		return f.GenerateFirefox(platform)
 	} else {
-		return GenerateFirefox(platform)
+		return "", errors.New("No Browser found, available types are 'chrome', 'firefox', 'edge'")
 	}
 }
 
-func GenerateEdge(platform string) (string, error) {
+func (f FakeHeaders) GenerateEdge(platform string) (string, error) {
 	edgetemplate := "Mozilla/5.0 ({{.Platform}}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{{.ChromeVersion}}.0.0.0 Safari/537.36 Edg/{{.EdgeVersion}}"
-	edgeversions := []string{
-		"116.0.1938.69",
-		"116.0.1938.62",
-		"115.0.1901.203",
-		"114.0.1823.106",
-	}
+
 	edge, err := template.New("edge").Parse(edgetemplate)
 	if err != nil {
 		return "", err
 	}
-	edgeVersion := edgeversions[random(len(edgeversions))]
+	edgeVersion := f.EdgeVersions[random(len(f.EdgeVersions))]
 	chromeVersion := strings.Split(edgeVersion, ".")[0]
 	var ua bytes.Buffer
 	edge.Execute(&ua, map[string]string{"Platform": platform, "EdgeVersion": edgeVersion, "ChromeVersion": chromeVersion})
 	return ua.String(), nil
 }
-func GenerateChrome(platform string) (string, error) {
+func (f FakeHeaders) GenerateChrome(platform string) (string, error) {
 	chrometemplate := "Mozilla/5.0 ({{.Platform}}) AppleWebKit/537.6 (KHTML, like Gecko) Chrome/{{.ChromeVersion}}.0.0.0 Safari/537.36"
-	chromeversions := []string{
-		"116",
-		"115",
-		"114",
-		"113",
-	}
+
 	chrome, err := template.New("chrome").Parse(chrometemplate)
 	if err != nil {
 		return "", err
 	}
-	chromeVersion := chromeversions[random(len(chromeversions))]
+	chromeVersion := f.ChromeVersions[random(len(f.ChromeVersions))]
 
 	var ua bytes.Buffer
 	chrome.Execute(&ua, map[string]string{"Platform": platform, "ChromeVersion": chromeVersion})
 	return ua.String(), nil
 }
-func GenerateFirefox(platform string) (string, error) {
+func (f FakeHeaders) GenerateFirefox(platform string) (string, error) {
 	firefoxtemplate := "Mozilla/5.0 ({{.Platform}}; rv:{{.FirefoxVersion}}.0) Gecko/20100101 Firefox/{{.FirefoxVersion}}.0"
-	firefoxversions := []string{
-		"117",
-		"116",
-		"115",
-		"114",
+	if strings.Contains(platform, "Machintosh") {
+
+		platform = strings.ReplaceAll(platform, "_", ".")
 	}
 	firefox, err := template.New("firefox").Parse(firefoxtemplate)
 	if err != nil {
 		return "", err
 	}
-	firefoxVersion := firefoxversions[random(len(firefoxversions))]
+	firefoxVersion := f.FirefoxVersions[random(len(f.FirefoxVersions))]
 
 	var ua bytes.Buffer
 	firefox.Execute(&ua, map[string]string{"Platform": platform, "FirefoxVersion": firefoxVersion})
