@@ -30,9 +30,10 @@ func TestFakeHeaders_RandomHeaders(t *testing.T) {
 	}
 }
 func TestFakeHeaders_FirefoxHeaders(t *testing.T) {
-	f := NewFakeHeaders(&FakeHeadersOptions{BrowserToGenerate: Firefox})
+	f := NewFakeHeaders(&FakeHeadersOptions{BrowserToGenerate: Chrome})
 	fakeHeaders, err := f.RandomHeaders()
 	println(fakeHeaders.UserAgent)
+	println(fakeHeaders.SecUA)
 	if err != nil {
 		t.Error(err)
 	}

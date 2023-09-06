@@ -170,7 +170,6 @@ func (f *FakeHeaders) RandomHeaders() (*FakeHeader, error) {
 	randAccept, err := f.RandomAccept()
 	randAcceptLanguage, err := f.RandomAcceptLanguage()
 	randAcceptEncoding, err := f.RandomAcceptEncoding()
-	punctuation := []string{".", "/", ")", "(", "_", " ", ":"}
 
 	if err != nil {
 		return &FakeHeader{}, err
@@ -204,8 +203,14 @@ func (f *FakeHeaders) RandomHeaders() (*FakeHeader, error) {
 		}
 		SecPlatform = fmt.Sprintf("\"%s\"", ua.OS)
 		//
-
-		derivedUA = append(derivedUA, fmt.Sprintf("\"Not%sA%sBrand\";v=\"99\"", punctuation[random(len(punctuation))], punctuation[random(len(punctuation))]))
+		possibleNotABrand := []string{
+			`"Not/A)Brand";v="99"`,
+			`"Not.A/Brand";v="8"`,
+			`"Not(A:Brand";v="8"`,
+			`"Not)A;Brand";v="24"`,
+			`"Not:A-Brand";v="99"`,
+		}
+		derivedUA = append(derivedUA, possibleNotABrand[random(len(possibleNotABrand))])
 		mathrand.Shuffle(len(derivedUA), func(i, j int) { derivedUA[i], derivedUA[j] = derivedUA[j], derivedUA[i] })
 	}
 	var finalUA string
