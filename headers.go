@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	mathrand "math/rand"
+	"strconv"
 	"strings"
 
 	"github.com/mileusna/useragent"
@@ -76,17 +76,8 @@ func NewFakeHeaders(opts *FakeHeadersOptions) *FakeHeaders {
 		opts.Platforms = []string{
 			"Windows NT 10.0; Win64; x64",
 			"Windows NT 10.0; WOW64",
-			"Windows NT 6.3; Win64; x64",
-			"Windows NT 6.3; WOW64",
 			"Macintosh; Intel Mac OS X 10_15_7",
 			"Macintosh; Intel Mac OS X 10_15_6",
-			"Macintosh; Intel Mac OS X 10_10",
-			"Macintosh; Intel Mac OS X 10_9",
-			"X11; Linux x86_64",
-			"X11; Ubuntu; Linux x86_64",
-			"X11; Fedora; Linux x86_64",
-			"X11; Arch; Linux x86_64",
-			"X11; Gentoo; Linux x86_64",
 		}
 	}
 
@@ -103,7 +94,6 @@ func NewFakeHeaders(opts *FakeHeadersOptions) *FakeHeaders {
 			"116",
 			"115",
 			"114",
-			"113",
 		}
 	}
 	if len(opts.FirefoxVersions) == 0 {
@@ -167,7 +157,6 @@ func (f *FakeHeaders) RandomAcceptEncoding() (string, error) {
 
 func (f *FakeHeaders) RandomHeaders() (*FakeHeader, error) {
 	randUserAgent, err := f.RandomUserAgent()
-	randAccept, err := f.RandomAccept()
 	randAcceptLanguage, err := f.RandomAcceptLanguage()
 	randAcceptEncoding, err := f.RandomAcceptEncoding()
 
@@ -179,49 +168,32 @@ func (f *FakeHeaders) RandomHeaders() (*FakeHeader, error) {
 	SecPlatform := ""
 	SecMobile := ""
 	te := ""
-	derivedUA := []string{}
 	var generatedBrowser string
 	if strings.Contains(randUserAgent, "Firefox") {
 		te = "trailers"
 		generatedBrowser = "Firefox"
 	}
+	if strings.Contains(randUserAgent, "Edge") {
+
+		generatedBrowser = "Microsoft Edge"
+	}
 	if strings.Contains(randUserAgent, "Chrome") {
-		derivedUA = []string{
-			fmt.Sprintf("\"Chromium\";v=\"%d\"", ua.VersionNo.Major),
-		}
-		if ua.Name == "Edge" {
-			derivedUA = append(derivedUA, fmt.Sprintf("\"Microsoft Edge\";v=\"%d\"", ua.VersionNo.Major))
-			generatedBrowser = "Edge"
-		} else {
-			derivedUA = append(derivedUA, fmt.Sprintf("\"Google Chrome\";v=\"%d\"", ua.VersionNo.Major))
-			generatedBrowser = "Chrome"
-		}
-		if ua.Mobile {
-			SecMobile = "?1"
-		} else {
-			SecMobile = "?0"
-		}
-		SecPlatform = fmt.Sprintf("\"%s\"", ua.OS)
-		//
-		possibleNotABrand := []string{
-			`"Not/A)Brand";v="99"`,
-			`"Not.A/Brand";v="8"`,
-			`"Not(A:Brand";v="8"`,
-			`"Not)A;Brand";v="24"`,
-			`"Not:A-Brand";v="99"`,
-		}
-		derivedUA = append(derivedUA, possibleNotABrand[random(len(possibleNotABrand))])
-		mathrand.Shuffle(len(derivedUA), func(i, j int) { derivedUA[i], derivedUA[j] = derivedUA[j], derivedUA[i] })
+		generatedBrowser = "Google Chrome"
 	}
-	var finalUA string
-	if len(derivedUA) > 0 {
-		finalUA = strings.Join(derivedUA, ", ")
-	} else {
-		finalUA = ""
+	versionsUAPair := map[string]string{
+		"116": fmt.Sprintf(`"Chromium";v="116", "Not)A;Brand";v="24", "%s";v="116"`, generatedBrowser),
+		"115": fmt.Sprintf(`"Not/A)Brand";v="99", "%s";v="115", "Chromium";v="115"`, generatedBrowser),
+		"114": fmt.Sprintf(`"Not.A/Brand";v="8", "Chromium";v="114", "%s";v="114"`, generatedBrowser),
 	}
+	versionsAcceptPair := map[string]string{
+		"116": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+		"115": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+		"114": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+	}
+
 	return &FakeHeader{
 		UserAgent:               randUserAgent,
-		Accept:                  randAccept,
+		Accept:                  versionsAcceptPair[strconv.Itoa(ua.VersionNo.Major)],
 		AcceptLanguage:          randAcceptLanguage,
 		Connection:              "keep-alive",
 		UpgradeInsecureRequests: "1",
@@ -231,7 +203,7 @@ func (f *FakeHeaders) RandomHeaders() (*FakeHeader, error) {
 		SecFetchDest:            "document",
 		SecFetchPlatform:        SecPlatform,
 		SecMobile:               SecMobile,
-		SecUA:                   finalUA,
+		SecUA:                   versionsUAPair[strconv.Itoa(ua.VersionNo.Major)],
 		AcceptEncoding:          randAcceptEncoding,
 		Te:                      te,
 		Browser:                 generatedBrowser,
